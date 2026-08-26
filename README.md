@@ -1,4 +1,4 @@
-# ResearchMind 🔬
+# Agentum 🔬
 
 A multi-agent AI research system that autonomously searches the web, scrapes content, writes a structured report, and critiques it — all in one pipeline. Built with LangChain, Groq, Tavily, and Streamlit.
 
