@@ -384,48 +384,56 @@ if st.session_state.running and not st.session_state.done:
     topic_val = st.session_state.topic_input
 
     if "search" not in results:
-        with st.spinner("Search Agent is working…"):
-            search_agent = build_search_agent()
-            sr = search_agent.invoke({
-                "messages": [("user", f"Find recent, reliable and detailed information about: {topic_val}")]
-            })
-            results["search"] = sr["messages"][-1]
-            st.session_state.results = dict(results)
+        placeholder = st.empty()
+        placeholder.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:#ff8c32;letter-spacing:0.1em;">Search Agent is working...</div>', unsafe_allow_html=True)
+        search_agent = build_search_agent()
+        sr = search_agent.invoke({
+            "messages": [("user", f"Find recent, reliable and detailed information about: {topic_val}")]
+        })
+        results["search"] = sr["messages"][-1]
+        st.session_state.results = dict(results)
+        placeholder.empty()
         st.rerun()
 
     elif "reader" not in results:
-        with st.spinner("Reader Agent is scraping top resources…"):
-            reader_agent = build_reader_agent()
-            rr = reader_agent.invoke({
-                "messages": [("user",
-                    f"Based on the following search results about '{topic_val}', "
-                    f"pick the most relevant URL and scrape it for deeper content.\n\n"
-                    f"Search Results:\n{results['search'][:500]}"
-                )]
-            })
-            results["reader"] = rr["messages"][-1]
-            st.session_state.results = dict(results)
+        placeholder = st.empty()
+        placeholder.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:#ff8c32;letter-spacing:0.1em;">Reader Agent is scraping top resources...</div>', unsafe_allow_html=True)
+        reader_agent = build_reader_agent()
+        rr = reader_agent.invoke({
+            "messages": [("user",
+                f"Based on the following search results about '{topic_val}', "
+                f"pick the most relevant URL and scrape it for deeper content.\n\n"
+                f"Search Results:\n{results['search'][:500]}"
+            )]
+        })
+        results["reader"] = rr["messages"][-1]
+        st.session_state.results = dict(results)
+        placeholder.empty()
         st.rerun()
 
     elif "writer" not in results:
-        with st.spinner("Writer is drafting the report…"):
-            research_combined = (
-                f"SEARCH RESULTS:\n{results['search'][:800]}\n\n"
-                f"SCRAPED CONTENT:\n{results['reader'][:800]}"
-            )
-            results["writer"] = invoke_with_retry(writer_chain, {
-                "topic": topic_val,
-                "research": research_combined
-            })
-            st.session_state.results = dict(results)
+        placeholder = st.empty()
+        placeholder.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:#ff8c32;letter-spacing:0.1em;">Writer is drafting the report...</div>', unsafe_allow_html=True)
+        research_combined = (
+            f"SEARCH RESULTS:\n{results['search'][:800]}\n\n"
+            f"SCRAPED CONTENT:\n{results['reader'][:800]}"
+        )
+        results["writer"] = invoke_with_retry(writer_chain, {
+            "topic": topic_val,
+            "research": research_combined
+        })
+        st.session_state.results = dict(results)
+        placeholder.empty()
         st.rerun()
 
     elif "critic" not in results:
-        with st.spinner("Critic is reviewing the report…"):
-            results["critic"] = invoke_with_retry(critic_chain, {
-                "report": results["writer"][:1500]
-            })
-            st.session_state.results = dict(results)
+        placeholder = st.empty()
+        placeholder.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:#ff8c32;letter-spacing:0.1em;">Critic is reviewing the report...</div>', unsafe_allow_html=True)
+        results["critic"] = invoke_with_retry(critic_chain, {
+            "report": results["writer"][:1500]
+        })
+        st.session_state.results = dict(results)
+        placeholder.empty()
         st.session_state.running = False
         st.session_state.done = True
         st.rerun()
