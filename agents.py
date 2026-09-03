@@ -7,11 +7,10 @@ import re
 
 load_dotenv()
 
-# Model — thinking disabled for speed, temperature=0 for consistency
+# Model
 llm = ChatGroq(
-    model="qwen/qwen3.8-27b",
+    model="allam-2-7b",
     temperature=0,
-    model_kwargs={"thinking": {"type": "disabled"}},
 )
 
 
