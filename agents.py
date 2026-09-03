@@ -1,78 +1,80 @@
-from langchain.agents import create_agent
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from tools import web_search , scrape_url 
+from tools import web_search, scrape_url
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
-#model setup 
-llm = ChatGroq(model="qwen/qwen3.8-27b", temperature=0)
+# Model — thinking disabled for speed, temperature=0 for consistency
+llm = ChatGroq(
+    model="qwen/qwen3.8-27b",
+    temperature=0,
+    model_kwargs={"thinking": {"type": "disabled"}},
+)
 
 
-#1st agent 
+# ── Search Agent — direct tool call, no ReAct loop ────────────────────────────
 def build_search_agent():
-    return create_agent(
-        model = llm,
-        tools= [web_search]
-    )
+    class SearchAgent:
+        def invoke(self, input_dict):
+            query = input_dict["messages"][0][1]
+            # Strip the preamble to get just the topic
+            topic = re.sub(r"Find recent.*?about:\s*", "", query, flags=re.IGNORECASE).strip()
+            result = web_search.invoke(topic)
+            return {"messages": [("user", query), ("assistant", result)]}
+    return SearchAgent()
 
-#2nd agent 
 
+# ── Reader Agent — direct tool call, no ReAct loop ───────────────────────────
 def build_reader_agent():
-    return create_agent(
-        model = llm,
-        tools = [scrape_url]
-    )
+    class ReaderAgent:
+        def invoke(self, input_dict):
+            msg = input_dict["messages"][0][1]
+            # Extract the first URL from search results
+            url_match = re.search(r"URL:\s*(https?://\S+)", msg)
+            if url_match:
+                url = url_match.group(1).strip()
+                result = scrape_url.invoke(url)
+            else:
+                result = "No URL found in search results."
+            return {"messages": [("user", msg), ("assistant", result)]}
+    return ReaderAgent()
 
 
-#writer chain 
-
+# ── Writer chain ──────────────────────────────────────────────────────────────
 writer_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert research writer. Write clear, structured and insightful reports."),
-    ("human", """Write a detailed research report on the topic below.
+    ("system", "You are a concise research writer. Write clear, structured reports."),
+    ("human", """Write a research report on: {topic}
 
-Topic: {topic}
-
-Research Gathered:
+Research:
 {research}
 
-Structure the report as:
-- Introduction
-- Key Findings (minimum 3 well-explained points)
-- Conclusion
-- Sources (list all URLs found in the research)
+Format:
+- Introduction (2-3 sentences)
+- Key Findings (3 bullet points)
+- Conclusion (2-3 sentences)
+- Sources (URLs only)
 
-Be detailed, factual and professional."""),
+Be factual and concise."""),
 ])
 
 writer_chain = writer_prompt | llm | StrOutputParser()
 
-#critic_chain 
 
+# ── Critic chain ──────────────────────────────────────────────────────────────
 critic_prompt = ChatPromptTemplate.from_messages([
-     ("system", "You are a sharp and constructive research critic. Be honest and specific."),
-    ("human", """Review the research report below and evaluate it strictly.
+    ("system", "You are a research critic. Be brief and specific."),
+    ("human", """Review this report:
 
-Report:
 {report}
 
-Respond in this exact format:
-
+Respond in this format:
 Score: X/10
-
-Strengths:
-- ...
-- ...
-
-Areas to Improve:
-- ...
-- ...
-
-One line verdict:
-..."""),
+Strengths: (2 bullet points)
+Improvements: (2 bullet points)
+Verdict: (one line)"""),
 ])
 
 critic_chain = critic_prompt | llm | StrOutputParser()
-
