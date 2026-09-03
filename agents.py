@@ -20,10 +20,9 @@ def build_search_agent():
     class SearchAgent:
         def invoke(self, input_dict):
             query = input_dict["messages"][0][1]
-            # Strip the preamble to get just the topic
             topic = re.sub(r"Find recent.*?about:\s*", "", query, flags=re.IGNORECASE).strip()
             result = web_search.invoke(topic)
-            return {"messages": [("user", query), ("assistant", result)]}
+            return {"messages": [result]}
     return SearchAgent()
 
 
@@ -32,14 +31,13 @@ def build_reader_agent():
     class ReaderAgent:
         def invoke(self, input_dict):
             msg = input_dict["messages"][0][1]
-            # Extract the first URL from search results
             url_match = re.search(r"URL:\s*(https?://\S+)", msg)
             if url_match:
                 url = url_match.group(1).strip()
                 result = scrape_url.invoke(url)
             else:
                 result = "No URL found in search results."
-            return {"messages": [("user", msg), ("assistant", result)]}
+            return {"messages": [result]}
     return ReaderAgent()
 
 
