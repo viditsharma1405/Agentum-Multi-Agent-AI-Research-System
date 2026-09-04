@@ -334,7 +334,7 @@ st.markdown("""
 <div class="hero">
     <div class="hero-eyebrow">Multi-Agent AI System</div>
     <h1>Agent<span>um</span></h1>
-    <p class="hero-sub">
+    <p class="hero-sub" style="text-align:center;margin-left:auto;margin-right:auto;">
         Four specialized AI agents collaborate — searching, scraping, writing,
         and critiquing — to deliver a polished research report on any topic.
     </p>
